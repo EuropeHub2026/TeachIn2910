@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serbia Votes for Change</title>
+<meta name="description" content="An interactive deck on Serbia's 25 October 2026 parliamentary election: results, seat map, count night and what happens next.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F5F1E8; --paper-2: #ECE6D8; --card: #FFFDF8;
+  --ink: #17171B; --muted: #625F58; --rule: #D6CEBD;
+  /* 2026 lists */
+  --sl: #E0532F; --us: #2F5DA8; --vmsz: #3F8F5B; --alb: #8E3557; --sdp: #2B8C99; --sda: #C49A22; --out: #BDB7AB;
+  /* 2023-only lists */
+  --spn: #7A5C99; --sps: #8C5A2B; --nada: #56636D; --mi: #8C8F4E; --spp: #5FA8A8; --rs: #A8A196;
+  --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #22211F; overflow: hidden; font-family: var(--sans); color: var(--ink); }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; background: var(--paper); overflow: hidden; }
+.slide { position: absolute; inset: 0; padding: 88px 120px 120px; opacity: 0; visibility: hidden; transition: opacity .45s ease, visibility 0s linear .45s; }
+.slide.active { opacity: 1; visibility: visible; transition: opacity .45s ease, visibility 0s; }
+
+.kicker { font: 600 21px/1 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 150px/0.95 var(--serif); letter-spacing: -.025em; margin-top: 36px; }
+h2 { font: 600 62px/1.06 var(--serif); letter-spacing: -.015em; margin-top: 18px; max-width: 1600px; }
+.lede { font: 400 32px/1.4 var(--sans); color: var(--muted); max-width: 1150px; margin-top: 28px; }
+.source { position: absolute; left: 120px; bottom: 52px; font: 400 17px/1.35 var(--sans); color: var(--muted); max-width: 1380px; }
+.source a { color: inherit; }
+.serif { font-family: var(--serif); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Builds revealed step by step */
+.build { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+.build.shown { opacity: 1; transform: none; }
+
+/* Chrome */
+#progress { position: absolute; left: 0; top: 0; height: 6px; background: var(--ink); width: 0; transition: width .4s ease; z-index: 20; }
+#nav { position: absolute; right: 64px; bottom: 40px; display: flex; align-items: center; gap: 14px; z-index: 20; }
+#nav button { width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--rule); background: var(--card); font-size: 24px; line-height: 1; }
+#nav button:hover { border-color: var(--ink); }
+#counter { font: 500 19px/1 var(--sans); color: var(--muted); min-width: 64px; text-align: center; }
+.hint { position: absolute; right: 64px; top: 44px; font: 400 17px/1 var(--sans); color: var(--muted); z-index: 20; }
+
+/* Slide 1 */
+.stats { display: flex; gap: 72px; margin-top: 64px; }
+.stat .v { font: 600 76px/1 var(--serif); }
+.stat .l { font: 500 22px/1.3 var(--sans); color: var(--muted); margin-top: 10px; max-width: 280px; }
+#meter { margin-top: 56px; display: block; }
+
+/* Slide 2 timeline */
+#timeline { margin-top: 90px; display: block; }
+
+/* Slide 3 playground */
+.two-col { display: grid; grid-template-columns: 560px 1fr; gap: 80px; margin-top: 48px; }
+.rules { list-style: none; }
+.rules li { font: 400 27px/1.35 var(--sans); padding: 18px 0; border-top: 1.5px solid var(--rule); }
+.rules li b { font-weight: 600; }
+.pg { background: var(--card); border: 1.5px solid var(--rule); border-radius: 18px; padding: 32px 40px; }
+.pg-head { display: flex; justify-content: space-between; align-items: baseline; }
+.pg-head h3 { font: 600 32px/1.1 var(--serif); }
+.pg-head button { border: 1.5px solid var(--rule); background: var(--paper); border-radius: 999px; padding: 10px 22px; font-size: 18px; }
+.pg-body { display: grid; grid-template-columns: 1fr 560px; gap: 36px; align-items: center; margin-top: 20px; }
+.pg-row { display: grid; grid-template-columns: 18px 1fr 80px 56px; align-items: center; gap: 14px; padding: 10px 0; }
+.pg-row .sw { width: 18px; height: 18px; border-radius: 50%; }
+.pg-row label { font: 500 21px/1.2 var(--sans); white-space: nowrap; }
+.pg-row .pct { font: 600 22px/1 var(--sans); text-align: right; }
+.pg-row .seats { font: 600 30px/1 var(--serif); text-align: right; }
+.pg-row.out label, .pg-row.out .pct, .pg-row.out .seats { color: #A39E94; }
+.pg-row input[type=range] { grid-column: 2 / 4; width: 100%; accent-color: var(--ink); height: 28px; }
+.pg-fixed { font: 400 19px/1.4 var(--sans); color: var(--muted); margin-top: 10px; }
+.pg-msg { font: 500 21px/1.4 var(--sans); margin-top: 14px; min-height: 60px; }
+
+/* Slide 4 count */
+.count-wrap { display: grid; grid-template-columns: 1120px 1fr; gap: 64px; margin-top: 36px; }
+.cp-panel { padding-top: 24px; }
+.cp-when { font: 600 20px/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.cp-label { font: 600 46px/1.1 var(--serif); margin-top: 14px; }
+.cp-detail { font: 400 24px/1.35 var(--sans); color: var(--muted); margin-top: 8px; }
+.cp-nums { display: flex; gap: 48px; margin-top: 36px; }
+.cp-nums .v { font: 600 72px/1 var(--serif); }
+.cp-nums .l { font: 500 20px/1.3 var(--sans); margin-top: 8px; display: flex; gap: 8px; align-items: center; }
+.cp-nums .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
+.cp-seats { font: 500 24px/1.4 var(--sans); margin-top: 28px; min-height: 34px; }
+.cp-ctrl { display: flex; align-items: center; gap: 20px; margin-top: 40px; }
+.cp-ctrl button { border: 1.5px solid var(--ink); background: var(--ink); color: var(--paper); border-radius: 999px; padding: 14px 28px; font-size: 20px; font-weight: 600; }
+.cp-ctrl input { flex: 1; accent-color: var(--ink); height: 30px; }
+
+/* Hemicycles */
+.hemi circle.seat { transition: opacity .25s ease; cursor: pointer; }
+.hemi.has-sel circle.seat:not(.sel) { opacity: .16; }
+.morph circle.seat { cursor: default; transition: fill .5s ease; }
+
+/* Slide 5 map */
+.map-wrap { display: grid; grid-template-columns: 1180px 1fr; gap: 60px; margin-top: 24px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.chip { display: inline-flex; align-items: center; gap: 10px; border: 1.5px solid var(--rule); background: var(--card); border-radius: 999px; padding: 10px 18px 10px 12px; font: 500 19px/1 var(--sans); }
+.chip svg { width: 22px; height: 22px; flex: none; }
+.chip b { font-weight: 700; margin-left: 2px; }
+.chip[aria-pressed=true] { border-color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.chip.static { cursor: default; }
+.card { position: relative; background: var(--card); border: 1.5px solid var(--rule); border-radius: 18px; padding: 36px 40px 30px; min-height: 640px; overflow: hidden; }
+.card-empty { font: 400 28px/1.4 var(--serif); color: var(--muted); margin-top: 220px; text-align: center; }
+.card-body { animation: slidein .35s ease; }
+@keyframes slidein { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+.card-bar { position: absolute; left: 0; top: 0; right: 0; height: 12px; }
+.card-kicker { font: 600 17px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.card h3 { font: 600 40px/1.1 var(--serif); margin-top: 14px; }
+.card-seats { display: flex; align-items: baseline; gap: 12px; margin-top: 22px; }
+.card-seats .big { font: 600 110px/0.9 var(--serif); }
+.card-seats span:last-child { font: 500 26px/1 var(--sans); color: var(--muted); }
+.card dl { display: grid; grid-template-columns: auto 1fr; gap: 10px 22px; margin-top: 26px; font: 400 21px/1.3 var(--sans); }
+.card dt { color: var(--muted); }
+.card dd { font-weight: 600; }
+.card ul { margin-top: 24px; padding-left: 22px; font: 400 20px/1.4 var(--sans); }
+.card li { margin-bottom: 8px; }
+.card-src { font: 400 15px/1.35 var(--sans); color: var(--muted); margin-top: 18px; }
+.card-close { position: absolute; right: 22px; top: 26px; border: none; background: none; font-size: 30px; line-height: 1; color: var(--muted); padding: 6px; }
+
+/* Slide 6 */
+.change-wrap { display: grid; grid-template-columns: 900px 1fr; gap: 80px; margin-top: 34px; }
+.panel-title { font: 600 30px/1.2 var(--serif); }
+.panel-sub { font: 400 20px/1.35 var(--sans); color: var(--muted); margin-top: 6px; }
+.toggle { display: inline-flex; border: 1.5px solid var(--ink); border-radius: 999px; overflow: hidden; margin-top: 18px; }
+.toggle button { border: none; background: transparent; padding: 10px 26px; font-size: 20px; font-weight: 600; }
+.toggle button[aria-pressed=true] { background: var(--ink); color: var(--paper); }
+
+/* Slide 7 tiles */
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 56px; }
+.tile { background: var(--card); border: 1.5px solid var(--rule); border-radius: 18px; padding: 34px 32px; min-height: 520px; }
+.tile .tag { font: 600 18px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; }
+.tile h3 { font: 600 38px/1.12 var(--serif); margin-top: 18px; }
+.tile p { font: 400 22px/1.45 var(--sans); color: #3D3B37; margin-top: 18px; }
+.tile .fig { font: 600 64px/1 var(--serif); margin-top: 26px; }
+.tile .figl { font: 500 18px/1.3 var(--sans); color: var(--muted); margin-top: 6px; }
+.good .tag { color: var(--vmsz); } .bad .tag { color: var(--sl); }
+
+/* Slide 8 */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 56px; counter-reset: s; }
+.step { border-top: 6px solid var(--ink); padding-top: 22px; }
+.step .n { font: 600 22px/1 var(--sans); color: var(--muted); }
+.step h3 { font: 600 34px/1.12 var(--serif); margin-top: 14px; }
+.step p { font: 400 21px/1.45 var(--sans); color: #3D3B37; margin-top: 12px; }
+.qs { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; }
+.qs h4 { font: 600 20px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.qs ul { list-style: none; margin-top: 16px; }
+.qs li { font: 400 22px/1.4 var(--sans); padding: 8px 0; border-top: 1.5px solid var(--rule); }
+.qs li a { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared SVG patterns: second visual cue for the small minority lists -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="pat-vmsz" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#3F8F5B"/><rect width="2.2" height="6" fill="#FFFFFF" fill-opacity=".6"/></pattern>
+    <pattern id="pat-alb" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#8E3557"/><circle cx="3" cy="3" r="1.3" fill="#FFFFFF" fill-opacity=".7"/></pattern>
+    <pattern id="pat-sdp" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#2B8C99"/><rect width="6" height="2" fill="#FFFFFF" fill-opacity=".6"/></pattern>
+    <pattern id="pat-sda" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#C49A22"/><rect width="1.6" height="6" fill="#FFFFFF" fill-opacity=".6"/><rect width="6" height="1.6" fill="#FFFFFF" fill-opacity=".6"/></pattern>
+  </defs>
+</svg>
+
+<div id="stage" role="application" aria-roledescription="slide deck" aria-label="Serbia votes for change">
+  <div id="progress"></div>
+  <div class="hint">← → to navigate</div>
+
+  <!-- 1. Title -->
+  <section class="slide" data-title="Title">
+    <div class="kicker">Serbia · Parliamentary election · 25 October 2026</div>
+    <h1>Serbia votes<br>for change</h1>
+    <p class="lede">A list born from two years of student protests wins an outright majority and ends 14 years of Serbian Progressive Party rule.</p>
+    <div class="stats">
+      <div class="stat"><div class="v num">141 <span style="font-size:40px;color:var(--muted)">/ 250</span></div><div class="l">seats for the Student List</div></div>
+      <div class="stat"><div class="v num">53.7%</div><div class="l">of the vote</div></div>
+      <div class="stat"><div class="v num">−26</div><div class="l">seats for Vučić's United Serbia, now in opposition</div></div>
+      <div class="stat"><div class="v num">65–68%</div><div class="l">turnout, highest in decades (final figure pending)</div></div>
+    </div>
+    <svg id="meter" width="1680" height="150" viewBox="0 0 1680 150" role="img" aria-label="Majority meter: Student List 141 seats crosses the 126-seat majority line"></svg>
+    <p class="source">Source: Republic Electoral Commission (RIK) via Wikipedia, count at 99.27% of polling stations (28 Oct 2026). Figures as of 29 October 2026.</p>
+  </section>
+
+  <!-- 2. Road to the ballot -->
+  <section class="slide" data-title="Road to the ballot" data-steps="2">
+    <div class="kicker">How we got here</div>
+    <h2>Two years from a station collapse to a snap election</h2>
+    <svg id="timeline" width="1680" height="600" viewBox="0 0 1680 600" role="img" aria-label="Timeline from the December 2023 election to election day on 25 October 2026"></svg>
+    <p class="source">Events in sequence, not to scale. Circle area shows crowd estimates (Archive of Public Gatherings, BBC). Source: Wikipedia, 2026 Serbian parliamentary election.</p>
+  </section>
+
+  <!-- 3. The rules + d'Hondt playground -->
+  <section class="slide" data-title="The rules">
+    <div class="kicker">The rules</div>
+    <h2>How 53.7% of the vote became 56% of the seats</h2>
+    <div class="two-col">
+      <ul class="rules">
+        <li><b>250 seats</b>, one nationwide constituency, closed party lists</li>
+        <li><b>d'Hondt method</b>: each list's votes are divided by 1, 2, 3 … and the 250 largest results win seats</li>
+        <li><b>3% threshold</b> of votes cast; lists below it win nothing</li>
+        <li><b>National minority lists</b> are exempt, and their quotients are raised by 35%</li>
+        <li><b>126 seats</b> for a majority</li>
+      </ul>
+      <div class="pg">
+        <div class="pg-head"><h3>Try it: move the vote shares</h3><button id="pg-reset" type="button">Reset to result</button></div>
+        <div class="pg-body">
+          <div id="pg-rows"></div>
+          <div>
+            <svg id="pg-hemi" class="hemi" width="560" height="300" viewBox="0 0 560 300" role="img" aria-label="Seat allocation from the vote shares you set"></svg>
+            <div id="pg-msg" class="pg-msg" aria-live="polite"></div>
+          </div>
+        </div>
+        <p class="pg-fixed">Minority lists held at their actual shares (2.2% combined); remaining votes went to 12 small lists below the threshold. Simplified model of the 2020 election law.</p>
+      </div>
+    </div>
+    <p class="source">Rules: Law on the Election of Members of Parliament (as amended 2020); votes from RIK via Wikipedia. With actual shares, this calculator reproduces the 141 / 103 / 2 / 2 / 1 / 1 split.</p>
+  </section>
+
+  <!-- 4. Count night -->
+  <section class="slide" data-title="Count night" data-steps="4">
+    <div class="kicker">Count night</div>
+    <h2>The early lead flipped as the count came in</h2>
+    <div class="count-wrap">
+      <svg id="count-chart" width="1120" height="620" viewBox="0 0 1120 620" role="img" aria-label="Vote share at each stage of the count"></svg>
+      <div class="cp-panel" aria-live="polite">
+        <div class="cp-when" id="cp-when"></div>
+        <div class="cp-label" id="cp-label"></div>
+        <div class="cp-detail" id="cp-detail"></div>
+        <div class="cp-nums">
+          <div><div class="v num" id="cp-sl" style="color:var(--sl)"></div><div class="l"><span class="dot" style="background:var(--sl)"></span>Student List</div></div>
+          <div><div class="v num" id="cp-us" style="color:var(--us)"></div><div class="l"><span class="dot" style="background:var(--us)"></span>United Serbia</div></div>
+        </div>
+        <div class="cp-seats" id="cp-seats"></div>
+        <div class="cp-ctrl">
+          <button id="cp-play" type="button">▶ Play the night</button>
+          <input id="cp-range" type="range" min="0" max="4" step="1" value="0" aria-label="Stage of the count">
+        </div>
+      </div>
+    </div>
+    <p class="source">Sources: RIK releases via Wikipedia and the Government of Serbia; CeSID/Ipsos projection. The first RIK release reported United Serbia's share only.</p>
+  </section>
+
+  <!-- 5. Seat map -->
+  <section class="slide" data-title="The new Assembly">
+    <div class="kicker">The new National Assembly</div>
+    <h2>A clear majority: 141 seats, 15 more than needed</h2>
+    <div class="map-wrap">
+      <div>
+        <svg id="map" class="hemi" width="1180" height="620" viewBox="0 0 1180 620" role="img" aria-label="Seat map of the 250-seat National Assembly"></svg>
+        <div class="legend" id="map-legend" role="group" aria-label="Parties: select one to see its result"></div>
+      </div>
+      <aside class="card" id="card" aria-live="polite">
+        <div class="card-empty">Click any seat or party<br>to see its result</div>
+      </aside>
+    </div>
+    <p class="source">Source: RIK via Wikipedia, count at 99.27% (28 Oct 2026); RIK's preliminary result of 26 Oct gave 140 / 104. Final split may shift after the 1 November re-run.</p>
+  </section>
+
+  <!-- 6. What changed -->
+  <section class="slide" data-title="What changed" data-steps="1">
+    <div class="kicker">What changed</div>
+    <h2>SNS lost 26 seats, and every poll missed the margin</h2>
+    <div class="change-wrap">
+      <div>
+        <div class="panel-title">The Assembly, 2023 to 2026</div>
+        <div class="panel-sub">SNS bloc kept on the right in both years so the shift is visible.</div>
+        <div class="toggle" role="group" aria-label="Year">
+          <button type="button" id="yr-2023" aria-pressed="true">2023</button>
+          <button type="button" id="yr-2026" aria-pressed="false">2026</button>
+        </div>
+        <svg id="morph" class="hemi morph" width="900" height="470" viewBox="0 0 900 470" role="img" aria-label="Seat map transitioning from 2023 to 2026"></svg>
+        <div class="legend" id="morph-legend"></div>
+      </div>
+      <div>
+        <div class="panel-title">Final polls vs the result</div>
+        <div class="panel-sub">Every final poll underestimated the Student List's 14-point margin.</div>
+        <svg id="polls" style="margin-top:18px" width="780" height="560" viewBox="0 0 780 560" role="img" aria-label="Dot plot of final opinion polls against the result"></svg>
+      </div>
+    </div>
+    <p class="source">Sources: 2023 seats from the Republic Bureau of Statistics via Wikipedia; polls compiled by PolitPro (CRTA, Faktor Plus, NSPM, Ipsos); result from RIK at 99.27%.</p>
+  </section>
+
+  <!-- 7. Was it fair? -->
+  <section class="slide" data-title="Was it fair?" data-steps="3">
+    <div class="kicker">Was it fair?</div>
+    <h2>A real choice, on an uneven playing field</h2>
+    <div class="tiles">
+      <div class="tile good build" data-step="0">
+        <div class="tag">Choice</div>
+        <h3>Voters had a genuine choice</h3>
+        <p>High turnout and strong competition between two main contenders. Preparations were efficient and voting was assessed positively at most stations.</p>
+        <div class="fig num">1,485</div><div class="figl">polling stations observed</div>
+      </div>
+      <div class="tile bad build" data-step="1">
+        <div class="tag">Media</div>
+        <h3>Coverage tilted to the ruling side</h3>
+        <p>Public and private broadcasters favoured United Serbia and mostly portrayed the Student List negatively. Threats to journalists fed self-censorship.</p>
+      </div>
+      <div class="tile bad build" data-step="2">
+        <div class="tag">Resources</div>
+        <h3>Incumbency advantages</h3>
+        <p>Observers cited misuse of public resources, pressure on voters and disrupted campaign events. Online campaigning was largely unregulated.</p>
+      </div>
+      <div class="tile bad build" data-step="3">
+        <div class="tag">Safety &amp; access</div>
+        <h3>Violence and barriers on the day</h3>
+        <p>Physical attacks on polling staff, observers and journalists raised serious concerns.</p>
+        <div class="fig num">60%</div><div class="figl">of observed stations lacked independent access for voters with physical disabilities</div>
+      </div>
+    </div>
+    <p class="source">Source: joint preliminary statement of ODIHR, PACE and the European Parliament, 26 October 2026, as reported by N1.</p>
+  </section>
+
+  <!-- 8. What next -->
+  <section class="slide" data-title="What next">
+    <div class="kicker">What happens next</div>
+    <h2>Four steps to a new government</h2>
+    <div class="steps">
+      <div class="step"><div class="n">1 · Sunday 1 November</div><h3>Re-run at 53 polling stations</h3><p>RIK repeats the vote where irregularities were found; final results follow.</p></div>
+      <div class="step"><div class="n">2 · Within 30 days</div><h3>New Assembly meets</h3><p>Final results start a 30-day clock for the constitutive session.</p></div>
+      <div class="step"><div class="n">3 · Then</div><h3>Prime minister and cabinet</h3><p>The Student List can govern alone. No prime minister has been named; Srdanović topped the ballot but resists being cast as leader.</p></div>
+      <div class="step"><div class="n">4 · Timing to confirm</div><h3>Presidential election</h3><p>Vučić resigned the presidency in September; Speaker Ana Brnabić is acting president.</p></div>
+    </div>
+    <div class="qs">
+      <div>
+        <h4>Open questions</h4>
+        <ul>
+          <li>Who becomes prime minister?</li>
+          <li>How fast do judicial and media reforms move?</li>
+          <li>Where does Serbia land between Brussels and Moscow?</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Sources</h4>
+        <ul>
+          <li><a href="https://en.wikipedia.org/wiki/2026_Serbian_parliamentary_election" target="_blank" rel="noopener">2026 Serbian parliamentary election, Wikipedia</a></li>
+          <li><a href="https://www.srbija.gov.rs/vest/en/290661/preliminary-election-results-from-8187-polling-stations-determined.php" target="_blank" rel="noopener">RIK preliminary results, Government of Serbia</a></li>
+          <li><a href="https://n1info.rs/english/news/international-observers-cite-serious-shortcomings-in-serbias-parliamentary-elections" target="_blank" rel="noopener">Observers' preliminary findings, N1</a></li>
+          <li><a href="https://politpro.eu/en/serbia/election/parliament/2026" target="_blank" rel="noopener">Results and polls, PolitPro</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="source">Figures as of 29 October 2026. Seat split and turnout may change with final results.</p>
+  </section>
+
+  <nav id="nav" aria-label="Slide navigation">
+    <button id="prev" type="button" aria-label="Previous">←</button>
+    <span id="counter" aria-live="polite"></span>
+    <button id="next" type="button" aria-label="Next">→</button>
+  </nav>
+</div>
+
+<script>
+/* ===================================================================
+   DATA — one object, copied from the working doc's tables.
+   Update here when RIK publishes final results.
+   =================================================================== */
+const DATA = {
+  asOf: '29 October 2026',
+  total: 250,
+  majority: 126,
+  totalVotes: 4366546, // derived: Student List 2,345,272 = 53.71%
+  parties2026: [
+    { id: 'sl', name: 'Student List', short: 'Student List', seats: 141, votes: 2345272, pct: 53.71, change: 'New', minority: false, color: '#E0532F',
+      facts: ['Leaderless citizens’ group born from the 2024–26 protests',
+              'Ballot carrier Ilija Srdanović; candidates include economist Dejan Šoškić and Dejan Bodiroga',
+              '11-point programme: judiciary, lustration, media freedom, education, housing, health'] },
+    { id: 'us', name: 'Aleksandar Vučić – United Serbia', short: 'United Serbia', seats: 103, votes: 1723654, pct: 39.48, change: '−26', minority: false, color: '#2F5DA8',
+      facts: ['Headed by Vučić, who resigned the presidency to run for prime minister',
+              'SNS-led; in power since 2012, partners include PUPS and SRS',
+              'Moves into opposition for the first time in 14 years'] },
+    { id: 'vmsz', name: 'Alliance of Vojvodina Hungarians', short: 'Vojvodina Hungarians', seats: 2, votes: 35004, pct: 0.80, change: '−4', minority: true, color: '#3F8F5B', pattern: true,
+      facts: ['Hungarian minority party led by Bálint Pásztor', 'A long-time partner in SNS-led governments', 'Minority list: exempt from the 3% threshold'] },
+    { id: 'alb', name: 'Albanian Coalition', short: 'Albanian Coalition', seats: 2, votes: 27680, pct: 0.63, change: '+1', minority: true, color: '#8E3557', pattern: true,
+      facts: ['Eight Albanian parties from the Preševo Valley, led by PVD/PDD', 'Up one seat on 2023', 'Minority list: exempt from the 3% threshold'] },
+    { id: 'sdp', name: 'SDP–CDP (Rasim Ljajić – Humane)', short: 'SDP–CDP', seats: 1, votes: null, pct: 0.5, approx: true, change: '+1', minority: true, color: '#2B8C99', pattern: true,
+      facts: ['Sandžak Democratic Party with the Montenegrin Democratic Party', 'Carries Rasim Ljajić’s name, though he is not a candidate', 'Minority list: exempt from the 3% threshold'] },
+    { id: 'sda', name: 'SDA Sandžaka', short: 'SDA Sandžaka', seats: 1, votes: null, pct: 0.3, approx: true, change: '−1', minority: true, color: '#C49A22', pattern: true,
+      facts: ['Bosniak party running as “Protectors of Sandžak”', 'Down one seat on 2023', 'Minority list: exempt from the 3% threshold'] }
+  ],
+  // 2023 seats, ordered to keep the SNS bloc on the right (for the morph)
+  parties2023: [
+    { id: 'spn', short: 'Serbia Against Violence', seats: 65, color: '#7A5C99' },
+    { id: 'nada', short: 'NADA', seats: 13, color: '#56636D' },
+    { id: 'mi', short: 'We – Voice from the People', seats: 13, color: '#8C8F4E' },
+    { id: 'sps', short: 'SPS–JS–Zeleni', seats: 18, color: '#8C5A2B' },
+    { id: 'sns', short: 'SNS-led list', seats: 129, color: '#2F5DA8' },
+    { id: 'vmsz', short: 'Vojvodina Hungarians', seats: 6, color: '#3F8F5B', pattern: true },
+    { id: 'spp', short: 'SPP–DSHV', seats: 2, color: '#5FA8A8' },
+    { id: 'sda', short: 'SDA Sandžaka', seats: 2, color: '#C49A22', pattern: true },
+    { id: 'alb', short: 'Albanian list', seats: 1, color: '#8E3557', pattern: true },
+    { id: 'rs', short: 'Russian Party–NKPJ', seats: 1, color: '#A8A196' }
+  ],
+  count: [
+    { when: '25 Oct · evening', label: 'First returns', detail: 'RIK, first 203 polling stations', sl: null, us: 54.69, seats: '' },
+    { when: '25 Oct · night', label: 'Projection', detail: 'CeSID/Ipsos, 96% of their sample', sl: 52.9, us: 38.8, seats: 'Projected seats: 140 – 103' },
+    { when: '26 Oct · 12:04', label: 'Near-complete count', detail: 'RIK, 8,135 of 8,392 stations', sl: 52.65, us: 39.22, seats: '' },
+    { when: '26 Oct · evening', label: 'Preliminary result', detail: 'RIK adopts result on 8,187 stations', sl: 52.71, us: 39.17, seats: 'Seats: 140 – 104' },
+    { when: '28 Oct', label: 'Latest count', detail: 'RIK, 99.27% of stations', sl: 53.71, us: 39.48, seats: 'Seats: 141 – 103' }
+  ],
+  polls: [
+    { name: 'CRTA', date: '15 Jul', sl: 44.9, us: 35.7 },
+    { name: 'Faktor Plus', date: '21 Sep', sl: 37.1, us: 48.6 },
+    { name: 'NSPM', date: '5 Oct', sl: 44.4, us: 42.7 },
+    { name: 'Ipsos', date: '22 Oct', sl: 40.0, us: 47.4 }
+  ],
+  timeline: [
+    { date: 'Dec 2023', lines: ['SNS-led list wins', '129 seats amid', 'fraud claims'] },
+    { date: '1 Nov 2024', lines: ['Novi Sad station', 'canopy collapses,', '16 killed'], key: true },
+    { date: '22 Dec 2024', lines: ['Rally at', 'Slavija Square'], crowd: 100000, crowdLabel: '100k' },
+    { date: '28 Jan 2025', lines: ['PM Vučević', 'resigns'] },
+    { date: '15 Mar 2025', lines: ['Largest protest', 'in Serbian', 'history'], crowd: 325000, crowdLabel: '325k' },
+    { date: '16 Apr 2025', lines: ['Đuro Macut', 'becomes PM'] },
+    { date: '23 May 2026', lines: ['Slavija rally', 'again'], crowd: 185000, crowdLabel: '180–190k' },
+    { date: '9 Sep 2026', lines: ['Assembly', 'dissolved,', 'election called'] },
+    { date: '27 Sep 2026', lines: ['Vučić quits', 'presidency to', 'run for PM'] },
+    { date: '25 Oct 2026', lines: ['Student List', 'wins majority'], win: true }
+  ],
+  timelineChapters: [[0, 1], [2, 5], [6, 9]] // events revealed per step
+};
+
+/* ===================================================================
+   Helpers
+   =================================================================== */
+const SVGNS = 'http://www.w3.org/2000/svg';
+const $ = s => document.querySelector(s);
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function el(tag, attrs = {}, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function txt(parent, x, y, s, attrs = {}) {
+  const t = el('text', Object.assign({ x, y, 'font-family': 'Inter, sans-serif', fill: '#17171B' }, attrs), parent);
+  t.textContent = s;
+  return t;
+}
+const fillFor = p => p.pattern ? `url(#pat-${p.id})` : p.color;
+const fmt = n => n.toLocaleString('en-GB');
+
+/* Hemicycle seat positions: rows proportional to radius, seats ordered left to right by angle */
+function hemicycle(n, { cx, cy, rIn, rOut, rows }) {
+  const radii = Array.from({ length: rows }, (_, i) => rIn + i * (rOut - rIn) / (rows - 1));
+  const sumR = radii.reduce((s, v) => s + v, 0);
+  let assigned = 0;
+  const counts = radii.map((r, i) => {
+    const c = i === rows - 1 ? n - assigned : Math.round(n * r / sumR);
+    assigned += c; return c;
+  });
+  const pos = [];
+  radii.forEach((r, i) => {
+    const k = counts[i];
+    for (let j = 0; j < k; j++) {
+      const a = Math.PI - Math.PI * j / (k - 1);
+      pos.push({ x: cx + r * Math.cos(a), y: cy - r * Math.sin(a), key: Math.round(a * 1e6), r });
+    }
+  });
+  pos.sort((p, q) => (q.key - p.key) || (p.r - q.r));
+  return pos;
+}
+function owners(parties) { return parties.flatMap(p => Array.from({ length: p.seats }, () => p)); }
+
+function swatch(p) {
+  return `<svg viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="10" fill="${fillFor(p)}"/></svg>`;
+}
+
+/* ===================================================================
+   Slide 1: majority meter
+   =================================================================== */
+(function meter() {
+  const svg = $('#meter'), W = 1680, x0 = 0, barY = 50, barH = 56;
+  const sx = s => x0 + s / DATA.total * W;
+  let acc = 0;
+  DATA.parties2026.forEach(p => {
+    el('rect', { x: sx(acc), y: barY, width: sx(p.seats) - x0, height: barH, fill: fillFor(p) }, svg);
+    acc += p.seats;
+  });
+  const m = sx(DATA.majority - 0.5);
+  el('line', { x1: m, x2: m, y1: barY - 18, y2: barY + barH + 18, stroke: '#17171B', 'stroke-width': 3, 'stroke-dasharray': '6 5' }, svg);
+  txt(svg, m, barY - 26, 'Majority: 126', { 'font-size': 20, 'font-weight': 600, 'text-anchor': 'middle' });
+  txt(svg, sx(0) + 18, barY + 37, 'Student List 141', { 'font-size': 24, 'font-weight': 700, fill: '#fff' });
+  txt(svg, sx(141) + 18, barY + 37, 'United Serbia 103', { 'font-size': 24, 'font-weight': 700, fill: '#fff' });
+  txt(svg, W, barY + barH + 36, 'Minority lists 6', { 'font-size': 19, fill: '#625F58', 'text-anchor': 'end' });
+  txt(svg, 0, barY + barH + 36, '0', { 'font-size': 19, fill: '#625F58' });
+})();
+
+/* ===================================================================
+   Slide 2: timeline
+   =================================================================== */
+const timelineNodes = [];
+(function timeline() {
+  const svg = $('#timeline'), ev = DATA.timeline, n = ev.length;
+  const left = 80, right = 1600, baseY = 330;
+  const x = i => left + i * (right - left) / (n - 1);
+  el('line', { x1: left - 40, x2: right + 40, y1: baseY, y2: baseY, stroke: '#17171B', 'stroke-width': 2 }, svg);
+  ev.forEach((e, i) => {
+    const g = el('g', { class: 'build' }, svg);
+    if (e.crowd) {
+      const r = Math.sqrt(e.crowd / 325000) * 118;
+      el('circle', { cx: x(i), cy: baseY - 26 - r, r, fill: '#E0532F', 'fill-opacity': .18, stroke: '#E0532F', 'stroke-width': 2 }, g);
+      txt(g, x(i), baseY - 26 - r + 9, e.crowdLabel, { 'font-size': 26, 'font-weight': 700, 'text-anchor': 'middle', fill: '#B23A1C' });
+      el('line', { x1: x(i), x2: x(i), y1: baseY - 26, y2: baseY - 8, stroke: '#E0532F', 'stroke-width': 2 }, g);
+    }
+    const dotFill = e.win ? '#E0532F' : (e.key ? '#17171B' : '#F5F1E8');
+    el('circle', { cx: x(i), cy: baseY, r: e.win || e.key ? 13 : 9, fill: dotFill, stroke: e.win ? '#E0532F' : '#17171B', 'stroke-width': 3 }, g);
+    txt(g, x(i), baseY + 52, e.date, { 'font-size': 21, 'font-weight': 700, 'text-anchor': 'middle', fill: e.win ? '#B23A1C' : '#17171B' });
+    e.lines.forEach((l, k) => txt(g, x(i), baseY + 84 + k * 28, l, { 'font-size': 20, 'text-anchor': 'middle', fill: '#3D3B37' }));
+    timelineNodes.push(g);
+  });
+})();
+
+/* ===================================================================
+   Slide 3: d'Hondt playground
+   =================================================================== */
+const PG = {
+  sliders: [
+    { id: 'sl', name: 'Student List', color: '#E0532F', max: 70 },
+    { id: 'us', name: 'United Serbia', color: '#2F5DA8', max: 70 },
+    { id: 'sps', name: 'Socialists (SPS)', color: '#8C5A2B', max: 10 },
+    { id: 'nada', name: 'NADA', color: '#56636D', max: 10 }
+  ],
+  defaults: { sl: 53.71, us: 39.48, sps: 2.2, nada: 0.9 },
+  minority: [
+    { id: 'vmsz', votes: 35004, color: '#3F8F5B', pattern: true, short: 'Vojvodina Hungarians' },
+    { id: 'alb', votes: 27680, color: '#8E3557', pattern: true, short: 'Albanian Coalition' },
+    { id: 'sdp', votes: Math.round(0.005 * DATA.totalVotes), color: '#2B8C99', pattern: true, short: 'SDP–CDP' },
+    { id: 'sda', votes: Math.round(0.003 * DATA.totalVotes), color: '#C49A22', pattern: true, short: 'SDA Sandžaka' }
+  ],
+  values: {}
+};
+const realVotes = { sl: 2345272, us: 1723654 };
+
+function dhondt(lists) {
+  const T = DATA.totalVotes, quot = [];
+  lists.forEach(l => {
+    if (!l.minority && l.votes < 0.03 * T) return;
+    const w = l.votes * (l.minority ? 1.35 : 1);
+    for (let d = 1; d <= DATA.total; d++) quot.push({ id: l.id, v: w / d, votes: l.votes });
+  });
+  quot.sort((a, b) => (b.v - a.v) || (b.votes - a.votes));
+  const seats = {};
+  lists.forEach(l => seats[l.id] = 0);
+  quot.slice(0, DATA.total).forEach(q => seats[q.id]++);
+  return seats;
+}
+
+const pgHemiPos = hemicycle(DATA.total, { cx: 280, cy: 285, rIn: 95, rOut: 270, rows: 8 });
+const pgCircles = pgHemiPos.map(p => el('circle', { class: 'seat', cx: p.x, cy: p.y, r: 7.5, fill: '#BDB7AB' }, $('#pg-hemi')));
+const pgLine = el('line', { x1: 280, x2: 280, y1: 285 - 70, y2: 285 - 285, stroke: '#17171B', 'stroke-width': 1.5, 'stroke-dasharray': '4 4' }, $('#pg-hemi'));
+
+(function buildPg() {
+  const wrap = $('#pg-rows');
+  PG.sliders.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'pg-row'; row.id = 'pgrow-' + s.id;
+    row.innerHTML = `<span class="sw" style="background:${s.color}"></span>
+      <label for="pg-${s.id}">${s.name}</label>
+      <span class="pct num" id="pgpct-${s.id}"></span>
+      <span class="seats num" id="pgseats-${s.id}"></span>
+      <span></span>
+      <input type="range" id="pg-${s.id}" min="0" max="${s.max}" step="0.1">
+      <span></span>`;
+    wrap.appendChild(row);
+    row.querySelector('input').addEventListener('input', e => setShare(s.id, parseFloat(e.target.value)));
+  });
+  $('#pg-reset').addEventListener('click', resetPg);
+  resetPg();
+})();
+
+function resetPg() { PG.values = Object.assign({}, PG.defaults); PG.exact = true; renderPg(); }
+
+function setShare(id, v) {
+  PG.exact = false;
+  PG.values[id] = v;
+  const minorityPct = PG.minority.reduce((s, m) => s + m.votes, 0) / DATA.totalVotes * 100;
+  const cap = 100 - minorityPct;
+  const sum = Object.values(PG.values).reduce((s, x) => s + x, 0);
+  let excess = sum - cap;
+  if (excess > 0) {
+    const others = PG.sliders.map(s => s.id).filter(k => k !== id && PG.values[k] > 0);
+    const pool = others.reduce((s, k) => s + PG.values[k], 0);
+    others.forEach(k => { PG.values[k] = Math.max(0, PG.values[k] - excess * PG.values[k] / pool); });
+  }
+  renderPg();
+}
+
+function renderPg() {
+  const T = DATA.totalVotes;
+  const lists = PG.sliders.map(s => ({
+    id: s.id, minority: false, color: s.color, short: s.name,
+    votes: PG.exact && realVotes[s.id] ? realVotes[s.id] : Math.round(PG.values[s.id] / 100 * T)
+  })).concat(PG.minority.map(m => Object.assign({ minority: true }, m)));
+  const seats = dhondt(lists);
+  PG.sliders.forEach(s => {
+    const v = PG.values[s.id];
+    $('#pg-' + s.id).value = v.toFixed(1);
+    $('#pgpct-' + s.id).textContent = v.toFixed(1) + '%';
+    $('#pgseats-' + s.id).textContent = seats[s.id];
+    $('#pgrow-' + s.id).classList.toggle('out', v < 3);
+  });
+  // colour the mini hemicycle in seat order: national lists by size, then minorities
+  const order = lists.filter(l => !l.minority).sort((a, b) => seats[b.id] - seats[a.id]).concat(lists.filter(l => l.minority));
+  const own = order.flatMap(l => Array.from({ length: seats[l.id] }, () => l));
+  pgCircles.forEach((c, i) => c.setAttribute('fill', own[i] ? fillFor(own[i]) : '#BDB7AB'));
+  const lead = order[0];
+  const minSeats = PG.minority.reduce((s, m) => s + seats[m.id], 0);
+  const below = PG.sliders.filter(s => PG.values[s.id] < 3).map(s => s.name);
+  let msg = seats[lead.id] >= DATA.majority
+    ? `<b>${lead.short}</b> wins a majority with ${seats[lead.id]} seats.`
+    : `<b>No majority:</b> largest list ${lead.short} has ${seats[lead.id]} seats; a coalition is needed.`;
+  msg += ` Minority lists: ${minSeats} seats.`;
+  if (below.length) msg += ` <span style="color:#625F58">Below 3%: ${below.join(', ')}.</span>`;
+  $('#pg-msg').innerHTML = msg;
+}
+
+/* ===================================================================
+   Slide 4: count night
+   =================================================================== */
+const COUNT = { W: 1120, H: 620, l: 90, r: 120, t: 40, b: 120, y0: 30, y1: 60 };
+function countX(i) { return COUNT.l + i * (COUNT.W - COUNT.l - COUNT.r) / (DATA.count.length - 1); }
+function countY(v) { return COUNT.t + (COUNT.y1 - v) / (COUNT.y1 - COUNT.y0) * (COUNT.H - COUNT.t - COUNT.b); }
+(function countAxes() {
+  const svg = $('#count-chart');
+  for (let v = 30; v <= 60; v += 10) {
+    el('line', { x1: COUNT.l, x2: COUNT.W - COUNT.r + 20, y1: countY(v), y2: countY(v), stroke: '#D6CEBD', 'stroke-width': 1 }, svg);
+    txt(svg, COUNT.l - 16, countY(v) + 7, v + '%', { 'font-size': 19, fill: '#625F58', 'text-anchor': 'end' });
+  }
+  el('line', { x1: COUNT.l, x2: COUNT.W - COUNT.r + 20, y1: countY(50), y2: countY(50), stroke: '#17171B', 'stroke-width': 1.5, 'stroke-dasharray': '5 5' }, svg);
+  txt(svg, COUNT.W - COUNT.r + 20, countY(50) - 10, '50% of votes', { 'font-size': 17, fill: '#17171B', 'text-anchor': 'end' });
+  DATA.count.forEach((c, i) => {
+    txt(svg, countX(i), COUNT.H - COUNT.b + 44, c.label, { 'font-size': 18, 'font-weight': 600, 'text-anchor': 'middle' });
+    txt(svg, countX(i), COUNT.H - COUNT.b + 70, c.when, { 'font-size': 16, fill: '#625F58', 'text-anchor': 'middle' });
+  });
+  el('g', { id: 'count-marks' }, svg);
+})();
+
+function renderCount(k) {
+  const g = $('#count-marks'); g.innerHTML = '';
+  const series = [{ key: 'us', color: '#2F5DA8' }, { key: 'sl', color: '#E0532F' }];
+  // current-stage marker
+  el('rect', { x: countX(k) - 46, y: COUNT.t - 10, width: 92, height: COUNT.H - COUNT.t - COUNT.b + 20, fill: '#17171B', 'fill-opacity': .05, rx: 10 }, g);
+  series.forEach(s => {
+    const pts = DATA.count.slice(0, k + 1).map((c, i) => c[s.key] == null ? null : [countX(i), countY(c[s.key])]).filter(Boolean);
+    if (pts.length > 1) el('polyline', { points: pts.map(p => p.join(',')).join(' '), fill: 'none', stroke: s.color, 'stroke-width': 5, 'stroke-linejoin': 'round' }, g);
+    DATA.count.slice(0, k + 1).forEach((c, i) => {
+      if (c[s.key] == null) return;
+      el('circle', { cx: countX(i), cy: countY(c[s.key]), r: i === k ? 11 : 7, fill: s.color, stroke: '#F5F1E8', 'stroke-width': 3 }, g);
+      if (i === k) txt(g, countX(i) + 18, countY(c[s.key]) + 7, c[s.key].toFixed(1) + '%', { 'font-size': 22, 'font-weight': 700, fill: s.color });
+    });
+  });
+  if (k >= 1) {
+    const x = (countX(0) + countX(1)) / 2;
+    txt(g, x, countY(57.5), 'Lead flips', { 'font-size': 20, 'font-weight': 700, 'text-anchor': 'middle', fill: '#17171B' });
+    el('path', { d: `M ${x} ${countY(57.5) + 10} L ${x} ${countY(47.5)}`, stroke: '#17171B', 'stroke-width': 1.5, fill: 'none', 'marker-end': '' }, g);
+  }
+  const c = DATA.count[k];
+  $('#cp-when').textContent = c.when;
+  $('#cp-label').textContent = c.label;
+  $('#cp-detail').textContent = c.detail;
+  $('#cp-sl').textContent = c.sl == null ? 'n/r' : c.sl.toFixed(1) + '%';
+  $('#cp-us').textContent = c.us.toFixed(1) + '%';
+  $('#cp-seats').textContent = c.sl == null ? 'Student List share not reported in the first release' : c.seats;
+  $('#cp-range').value = k;
+}
+$('#cp-range').addEventListener('input', e => goStep(parseInt(e.target.value, 10)));
+let playTimer = null;
+$('#cp-play').addEventListener('click', () => {
+  clearInterval(playTimer);
+  goStep(0);
+  playTimer = setInterval(() => {
+    const s = slides[cur];
+    if (s.step >= s.steps) { clearInterval(playTimer); return; }
+    goStep(s.step + 1);
+  }, reduceMotion ? 900 : 1500);
+});
+
+/* ===================================================================
+   Slide 5: interactive seat map
+   =================================================================== */
+const mapPos = hemicycle(DATA.total, { cx: 590, cy: 590, rIn: 200, rOut: 560, rows: 8 });
+const mapOwn = owners(DATA.parties2026);
+const mapSvg = $('#map');
+el('rect', { x: 0, y: 0, width: 1180, height: 620, fill: 'transparent', class: 'bg' }, mapSvg);
+const mapCircles = mapPos.map((p, i) => {
+  const party = mapOwn[i];
+  const c = el('circle', { class: 'seat', cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 16, fill: fillFor(party), 'data-party': party.id }, mapSvg);
+  const t = el('title', {}, c); t.textContent = `${party.short}: ${party.seats} seats`;
+  return c;
+});
+el('line', { x1: 590, x2: 590, y1: 590 - 200 + 30, y2: 590 - 560 - 22, stroke: '#17171B', 'stroke-width': 2, 'stroke-dasharray': '6 6', 'pointer-events': 'none' }, mapSvg);
+txt(mapSvg, 590, 470, '126 for a majority', { 'font-size': 24, 'font-weight': 600, 'text-anchor': 'middle', fill: '#625F58', 'pointer-events': 'none' });
+txt(mapSvg, 590, 520, '250 seats', { 'font-size': 52, 'font-weight': 600, 'text-anchor': 'middle', 'font-family': 'Fraunces, serif', 'pointer-events': 'none' });
+
+const legend = $('#map-legend');
+DATA.parties2026.forEach(p => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'chip'; b.dataset.party = p.id;
+  b.setAttribute('aria-pressed', 'false');
+  b.innerHTML = `${swatch(p)}${p.short}<b class="num">${p.seats}</b>`;
+  b.addEventListener('click', e => { e.stopPropagation(); selectParty(selected === p.id ? null : p.id); });
+  legend.appendChild(b);
+});
+let selected = null;
+function selectParty(id) {
+  selected = id;
+  mapSvg.classList.toggle('has-sel', !!id);
+  mapCircles.forEach(c => c.classList.toggle('sel', c.dataset.party === id));
+  legend.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.party === id ? 'true' : 'false'));
+  const card = $('#card');
+  if (!id) { card.innerHTML = '<div class="card-empty">Click any seat or party<br>to see its result</div>'; return; }
+  const p = DATA.parties2026.find(x => x.id === id);
+  card.innerHTML = `<div class="card-bar" style="background:${fillFor(p)}"></div>
+    <div class="card-body">
+      <div class="card-kicker">${p.minority ? 'National minority list' : 'Electoral list'}</div>
+      <h3>${p.name}</h3>
+      <div class="card-seats"><span class="big num">${p.seats}</span><span>of 250 seats</span></div>
+      <dl>
+        <dt>Vote share</dt><dd class="num">${p.approx ? 'about ' : ''}${p.pct.toFixed(p.approx ? 1 : 2)}%</dd>
+        <dt>Votes</dt><dd class="num">${p.votes ? fmt(p.votes) : 'count pending'}</dd>
+        <dt>Change vs 2023</dt><dd class="num">${p.change}</dd>
+      </dl>
+      <ul>${p.facts.map(f => `<li>${f}</li>`).join('')}</ul>
+      <p class="card-src">RIK count at 99.27% (28 Oct 2026) via Wikipedia.</p>
+    </div>
+    <button class="card-close" type="button" aria-label="Close">×</button>`;
+  card.querySelector('.card-close').addEventListener('click', e => { e.stopPropagation(); selectParty(null); });
+}
+mapSvg.addEventListener('click', e => {
+  const id = e.target.dataset && e.target.dataset.party;
+  if (id) selectParty(selected === id ? null : id);
+  else selectParty(null);
+});
+$('#card').addEventListener('click', e => e.stopPropagation());
+
+/* ===================================================================
+   Slide 6: 2023 -> 2026 morph + polls dot plot
+   =================================================================== */
+const morphPos = hemicycle(DATA.total, { cx: 450, cy: 450, rIn: 150, rOut: 430, rows: 8 });
+const own2023 = owners(DATA.parties2023), own2026 = owners(DATA.parties2026);
+const morphCircles = morphPos.map((p, i) => el('circle', { class: 'seat', cx: p.x.toFixed(1), cy: p.y.toFixed(1), r: 12, fill: fillFor(own2023[i]),
+  style: reduceMotion ? '' : `transition-delay:${(i / DATA.total * 1.1).toFixed(2)}s` }, $('#morph')));
+el('line', { x1: 450, x2: 450, y1: 450 - 150 + 20, y2: 450 - 430 - 16, stroke: '#17171B', 'stroke-width': 1.5, 'stroke-dasharray': '5 5' }, $('#morph'));
+const morphYear = txt($('#morph'), 450, 430, '2023', { 'font-size': 64, 'font-weight': 600, 'text-anchor': 'middle', 'font-family': 'Fraunces, serif' });
+function setYear(y) {
+  const own = y === 2026 ? own2026 : own2023;
+  morphCircles.forEach((c, i) => c.setAttribute('fill', fillFor(own[i])));
+  morphYear.textContent = y;
+  $('#yr-2023').setAttribute('aria-pressed', y === 2023);
+  $('#yr-2026').setAttribute('aria-pressed', y === 2026);
+  const parties = y === 2026 ? DATA.parties2026 : DATA.parties2023.slice().sort((a, b) => b.seats - a.seats);
+  $('#morph-legend').innerHTML = parties.map(p => `<span class="chip static">${swatch(p)}${p.short}<b class="num">${p.seats}</b></span>`).join('');
+}
+$('#yr-2023').addEventListener('click', () => goStep(0));
+$('#yr-2026').addEventListener('click', () => goStep(1));
+
+(function polls() {
+  const svg = $('#polls'), W = 780, l = 170, r = 40, top = 40, rowH = 84;
+  const x = v => l + (v - 30) / (60 - 30) * (W - l - r);
+  const rows = DATA.polls.concat([{ name: 'Result', date: '25 Oct', sl: 53.71, us: 39.48, result: true }]);
+  const bottom = top + rows.length * rowH;
+  for (let v = 30; v <= 60; v += 10) {
+    el('line', { x1: x(v), x2: x(v), y1: top - 10, y2: bottom - 30, stroke: '#D6CEBD' }, svg);
+    txt(svg, x(v), bottom + 4, v + '%', { 'font-size': 18, fill: '#625F58', 'text-anchor': 'middle' });
+  }
+  [['sl', '#E0532F'], ['us', '#2F5DA8']].forEach(([k, c]) => {
+    el('line', { x1: x(rows[4][k]), x2: x(rows[4][k]), y1: top - 10, y2: bottom - 30, stroke: c, 'stroke-width': 2, 'stroke-dasharray': '5 5', 'stroke-opacity': .7 }, svg);
+  });
+  rows.forEach((p, i) => {
+    const y = top + i * rowH + 20;
+    txt(svg, 0, y + 2, p.name, { 'font-size': 22, 'font-weight': p.result ? 700 : 600 });
+    txt(svg, 0, y + 26, p.date, { 'font-size': 17, fill: '#625F58' });
+    el('line', { x1: x(Math.min(p.sl, p.us)), x2: x(Math.max(p.sl, p.us)), y1: y, y2: y, stroke: '#9C968A', 'stroke-width': 3 }, svg);
+    [['us', '#2F5DA8'], ['sl', '#E0532F']].forEach(([k, c]) => {
+      el('circle', { cx: x(p[k]), cy: y, r: p.result ? 13 : 10, fill: c, stroke: '#F5F1E8', 'stroke-width': 2.5 }, svg);
+    });
+    const lead = p.sl - p.us;
+    const label = (lead > 0 ? 'SL +' : 'US +') + Math.abs(lead).toFixed(1);
+    txt(svg, x(Math.max(p.sl, p.us)) + 20, y + 7, label, { 'font-size': 18, 'font-weight': 700, fill: lead > 0 ? '#B23A1C' : '#2F5DA8' });
+  });
+  txt(svg, l, 16, '● Student List', { 'font-size': 18, fill: '#E0532F', 'font-weight': 600 });
+  txt(svg, l + 170, 16, '● United Serbia', { 'font-size': 18, fill: '#2F5DA8', 'font-weight': 600 });
+})();
+
+/* ===================================================================
+   Deck engine: slides, steps, keys, swipe, hash, scaling
+   =================================================================== */
+const sectionEls = [...document.querySelectorAll('.slide')];
+const hooks = {
+  1: k => {
+    const ch = DATA.timelineChapters[k];
+    timelineNodes.forEach((g, i) => g.classList.toggle('shown', DATA.timelineChapters.slice(0, k + 1).some(c => i >= c[0] && i <= c[1])));
+  },
+  3: k => renderCount(k),
+  5: k => setYear(k === 0 ? 2023 : 2026)
+};
+const slides = sectionEls.map((s, i) => ({ el: s, steps: parseInt(s.dataset.steps || '0', 10), step: 0, idx: i }));
+let cur = 0;
+
+function applyStep() {
+  const s = slides[cur];
+  s.el.querySelectorAll('.build[data-step]').forEach(b => b.classList.toggle('shown', parseInt(b.dataset.step, 10) <= s.step));
+  if (hooks[cur]) hooks[cur](s.step);
+}
+function show(i, step = 0) {
+  i = Math.max(0, Math.min(slides.length - 1, i));
+  if (i !== cur) { clearInterval(playTimer); if (cur === 4) selectParty(null); }
+  slides[cur].el.classList.remove('active');
+  cur = i;
+  const s = slides[cur];
+  s.step = Math.max(0, Math.min(s.steps, step));
+  s.el.classList.add('active');
+  applyStep();
+  $('#progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+  $('#counter').textContent = `${cur + 1} / ${slides.length}`;
+  history.replaceState(null, '', '#' + (cur + 1));
+}
+function goStep(k) { const s = slides[cur]; s.step = Math.max(0, Math.min(s.steps, k)); applyStep(); }
+function next() { const s = slides[cur]; if (s.step < s.steps) goStep(s.step + 1); else if (cur < slides.length - 1) show(cur + 1, 0); }
+function prev() { const s = slides[cur]; if (s.step > 0) goStep(s.step - 1); else if (cur > 0) show(cur - 1, slides[cur - 1].steps); }
+
+document.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  if (tag === 'INPUT') return; // sliders keep their arrow keys
+  if (e.key === 'Escape') { selectParty(null); return; }
+  if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;
+  if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); next(); }
+  else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(slides.length - 1, slides[slides.length - 1].steps);
+});
+$('#next').addEventListener('click', next);
+$('#prev').addEventListener('click', prev);
+
+let touchX = null;
+document.addEventListener('touchstart', e => { touchX = e.target.tagName === 'INPUT' ? null : e.touches[0].clientX; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (touchX == null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  if (Math.abs(dx) > 50) (dx < 0 ? next : prev)();
+  touchX = null;
+});
+
+function fit() {
+  const sc = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  const st = $('#stage');
+  st.style.transform = `translate(${(window.innerWidth - 1920 * sc) / 2}px, ${(window.innerHeight - 1080 * sc) / 2}px) scale(${sc})`;
+}
+window.addEventListener('resize', fit);
+window.addEventListener('hashchange', () => { const n = parseInt(location.hash.slice(1), 10); if (n && n - 1 !== cur) show(n - 1); });
+fit();
+const startAt = parseInt(location.hash.slice(1), 10);
+slides.forEach((s, i) => { if (i !== 0) s.el.classList.remove('active'); });
+show(startAt ? startAt - 1 : 0);
+sectionEls[cur].classList.add('active');
+</script>
+</body>
+</html>
